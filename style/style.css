@@ -1,0 +1,79 @@
+
+        body {
+            background: radial-gradient(circle at top left, #0f172a, #020617);
+            font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            color: white;
+        }
+        .glass-container {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }
+        .display-font { font-family: 'JetBrains+Mono', monospace; }
+        .ai-glow { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+        
+        /* Chat scrollbar and area */
+        .chat-area {
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #475569 transparent;
+        }
+        .chat-area::-webkit-scrollbar { width: 4px; }
+        .chat-area::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        
+        .calc-display-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            width: 100%;
+            overflow: hidden;
+        }
+        .calc-input-field {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            text-align: right;
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+            color: white;
+            white-space: nowrap;
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        
+        /* Chat Bubbles */
+        .bubble {
+            max-width: 85%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        .bubble-user {
+            background: rgba(79, 70, 229, 0.2);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+            color: #e0e7ff;
+        }
+        .bubble-ai {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 0.25rem;
+            color: #f1f5f9;
+        }
+        
+        button:active { transform: scale(0.95); }

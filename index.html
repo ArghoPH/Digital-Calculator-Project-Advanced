@@ -3,15 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital-Calculator-Project-Advanced</title>
+    <title>AI Math Solver Pro - Chat Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono&family=Noto+Sans+Bengali:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #0f172a, #020617);
+            font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            color: white;
+        }
+        .glass-container {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }
+        .display-font { font-family: 'JetBrains+Mono', monospace; }
+        .ai-glow { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+        
+        /* Chat scrollbar and area */
+        .chat-area {
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #475569 transparent;
+        }
+        .chat-area::-webkit-scrollbar { width: 4px; }
+        .chat-area::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        
+        .calc-display-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            width: 100%;
+            overflow: hidden;
+        }
+        .calc-input-field {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            text-align: right;
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+            color: white;
+            white-space: nowrap;
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        
+        /* Chat Bubbles */
+        .bubble {
+            max-width: 85%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        .bubble-user {
+            background: rgba(79, 70, 229, 0.2);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+            color: #e0e7ff;
+        }
+        .bubble-ai {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 0.25rem;
+            color: #f1f5f9;
+        }
+        
+        button:active { transform: scale(0.95); }
+    </style>
 </head>
 <body>
-    <main>
-        <div>
-            <h1>Digital Calculator Project - Advanced</h1>
-            <p>This is a simple digital calculator project built using HTML, CSS, and JavaScript. It allows users to perform basic arithmetic operations such as addition, subtraction, multiplication, and division.</p>
-            <p>To use the calculator, simply click on the buttons to input numbers and operations. The result will be displayed on the screen.</p>
+
+<div id="app" class="relative p-4 w-full flex justify-center">
+    <div class="glass-container w-full max-w-5xl rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl min-h-[650px] max-h-[90vh]">
+        
+        <!-- Left Side: Calculator -->
+        <div class="p-6 md:p-8 flex-1 flex flex-col border-r border-white/5 bg-slate-900/50">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-[10px] font-bold text-indigo-400 tracking-widest uppercase">Hybrid Math Engine</span>
+                <div class="flex space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
+                </div>
+            </div>
+
+            <div class="bg-black/60 rounded-3xl p-6 mb-6 border border-white/10 shadow-inner">
+                <div class="calc-display-container">
+                    <div class="text-slate-500 text-xs h-5 mb-1 display-font truncate w-full text-right">
+                        {{ history || 'Advanced Math Input' }}
+                    </div>
+                    <input v-model="current" placeholder="0" 
+                           class="calc-input-field display-font placeholder-slate-800" 
+                           @keyup.enter="calculate">
+                </div>
+            </div>
+
+            <div class="btn-grid flex-1 mb-6">
+                <button @click="clear" class="bg-red-500/10 hover:bg-red-500/20 p-4 rounded-2xl text-xs font-bold text-red-400">AC</button>
+                <button @click="append('sqrt(')" class="bg-slate-800 hover:bg-slate-700 p-4 rounded-2xl text-sm font-bold text-indigo-400">√</button>
+                <button @click="append('^2')" class="bg-slate-800 hover:bg-slate-700 p-4 rounded-2xl text-sm font-bold text-indigo-400">x²</button>
+                <button @click="append('/')" class="bg-indigo-600/20 hover:bg-indigo-600/30 p-4 rounded-2xl text-indigo-400 font-bold">÷</button>
+
+                <button v-for="n in ['7','8','9']" @click="append(n)" class="bg-white/5 hover:bg-white/10 p-4 rounded-2xl font-medium text-lg">{{n}}</button>
+                <button @click="append('*')" class="bg-indigo-600/20 hover:bg-indigo-600/30 p-4 rounded-2xl text-indigo-400 font-bold">×</button>
+
+                <button v-for="n in ['4','5','6']" @click="append(n)" class="bg-white/5 hover:bg-white/10 p-4 rounded-2xl font-medium text-lg">{{n}}</button>
+                <button @click="append('-')" class="bg-indigo-600/20 hover:bg-indigo-600/30 p-4 rounded-2xl text-indigo-400 font-bold">−</button>
+
+                <button v-for="n in ['1','2','3']" @click="append(n)" class="bg-white/5 hover:bg-white/10 p-4 rounded-2xl font-medium text-lg">{{n}}</button>
+                <button @click="append('+')" class="bg-indigo-600/20 hover:bg-indigo-600/30 p-4 rounded-2xl text-indigo-400 font-bold">+</button>
+
+                <button @click="append('(')" class="bg-white/5 hover:bg-white/10 p-4 rounded-2xl font-medium">(</button>
+                <button @click="append('0')" class="bg-white/5 hover:bg-white/10 p-4 rounded-2xl font-medium text-lg">0</button>
+                <button @click="append(')')" class="bg-white/5 hover:bg-white/10 p-4 rounded-2xl font-medium">)</button>
+                <button @click="calculate" class="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 rounded-2xl font-bold shadow-lg">=</button>
+            </div>
+            
+            <button @click="solveWithAI" :disabled="loading" 
+                    class="w-full py-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-bold flex items-center justify-center gap-3 hover:bg-indigo-500/20 transition-all ai-glow disabled:opacity-50">
+                <span v-if="loading" class="animate-spin text-xl">🌀</span>
+                <span v-else>✨ অংকটি সমাধান করো (AI)</span>
+            </button>
         </div>
-    </main>
+
+        <!-- Right Side: AI Chat Interface -->
+        <div class="w-full md:w-112 bg-black/40 p-6 md:p-8 flex flex-col border-t md:border-t-0 md:border-l border-white/10 overflow-hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-purple-500/20 rounded-lg">
+                        <span class="text-xl">🤖</span>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">AI সমাধান ও চ্যাট</h3>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-widest font-sans">Active AI Engine</p>
+                    </div>
+                </div>
+                <button @click="messages = []" class="text-slate-500 hover:text-white text-xs transition-colors">Clear Chat</button>
+            </div>
+
+            <!-- Chat Message Area -->
+            <div ref="chatContainer" class="flex-1 flex flex-col chat-area pr-2 mb-4">
+                <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center opacity-30 select-none">
+                    <span class="text-5xl mb-4">💬</span>
+                    <p class="text-sm">Calculator input solve koro<br>ba ekhane question koro</p>
+                </div>
+                
+                <div v-for="(msg, index) in messages" :key="index" 
+                     :class="['bubble', msg.role === 'user' ? 'bubble-user' : 'bubble-ai']">
+                    <div class="whitespace-pre-wrap">{{ msg.content }}</div>
+                </div>
+
+                <div v-if="loading" class="bubble bubble-ai flex items-center gap-2">
+                    <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
+                    <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="relative">
+                <input v-model="userInput" 
+                       @keyup.enter="chatWithAI"
+                       placeholder="সরাসরি প্রশ্ন করুন..." 
+                       class="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-white focus:border-indigo-500/50 outline-none transition-all font-sans">
+                <button @click="chatWithAI" :disabled="loading" class="absolute right-2 top-1.5 p-1.5 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+
+            <div v-if="error" class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-[11px] text-red-400 flex items-center gap-2">
+                <span>⚠️</span> {{ error }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp } = Vue;
+    const apiKey = ""; 
+
+    createApp({
+        data() {
+            return {
+                current: '',
+                history: '',
+                userInput: '',
+                messages: [], // Format: { role: 'user' | 'ai', content: string }
+                loading: false,
+                error: null
+            }
+        },
+        methods: {
+            clear() {
+                this.current = '';
+                this.history = '';
+                this.error = null;
+            },
+            append(char) {
+                this.error = null;
+                this.current += char;
+            },
+            calculate() {
+                if (!this.current) return;
+                try {
+                    this.history = this.current;
+                    const result = math.evaluate(this.current);
+                    this.current = math.format(result, { precision: 14 }).toString();
+                } catch (e) {
+                    this.error = "ইনপুট সঠিক নয়!";
+                }
+            },
+            scrollToBottom() {
+                this.$nextTick(() => {
+                    const container = this.$refs.chatContainer;
+                    if (container) container.scrollTop = container.scrollHeight;
+                });
+            },
+            async solveWithAI() {
+                if (!this.current) {
+                    this.error = "আগে ম্যাথ ইনপুট দিন!";
+                    return;
+                }
+                const prompt = `এই অংকটি সমাধান করো: ${this.current}`;
+                this.messages.push({ role: 'user', content: `Calculator Solve: ${this.current}` });
+                this.scrollToBottom();
+                await this.processAIRequest(prompt, "You are a professional math tutor.");
+            },
+            async chatWithAI() {
+                if (!this.userInput || this.loading) return;
+                const query = this.userInput;
+                this.messages.push({ role: 'user', content: query });
+                this.userInput = '';
+                this.scrollToBottom();
+                await this.processAIRequest(query, "Advanced math expert.");
+            },
+            async processAIRequest(query, instruction) {
+                this.loading = true;
+                this.error = null;
+                
+                const systemPrompt = `${instruction} 
+                Response format: Strictly use Bengali Language (বাংলা ভাষা). 
+                Step-by-step clear reasoning daw. Markdown bold use koro results er jonno.`;
+                
+                try {
+                    const response = await this.callGemini(query, systemPrompt);
+                    this.messages.push({ role: 'ai', content: response });
+                    this.scrollToBottom();
+                } catch (err) {
+                    this.error = "সার্ভার সমস্যা। আবার চেষ্টা করুন।";
+                } finally {
+                    this.loading = false;
+                }
+            },
+            async callGemini(query, systemPrompt, retries = 5) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: query }] }],
+                                systemInstruction: { parts: [{ text: systemPrompt }] }
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('API Error');
+                        const data = await response.json();
+                        return data.candidates?.[0]?.content?.parts?.[0]?.text || "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
+                    } catch (err) {
+                        if (i === retries - 1) throw err;
+                        await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                    }
+                }
+            }
+        }
+    }).mount('#app')
+</script>
+
 </body>
 </html>
